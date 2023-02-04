@@ -14,6 +14,10 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(value = "/", produces = MediaType.TEXT_PLAIN_VALUE)
@@ -31,7 +35,14 @@ public class RatesController {
     public String loadRates(LocalDate date) {
         Rate[] rates = restTemplate.getForObject("https://www.nbrb.by/api/exrates/rates?periodicity=0&ondate={ondate}",
                 Rate[].class, date.toString());
-        cacheManager.getCache("rates").put(date, rates);
+
+        // immediately process flat rates array into Rate::getAbbr keyed map to prepare faster lookup later
+        Map<String, Rate> ratesMap = Arrays.stream(rates).collect(Collectors.toUnmodifiableMap(
+                Rate::getAbbr,
+                Function.identity()));
+
+        cacheManager.getCache("rates").put(date, ratesMap);
+
         return "Loaded " + rates.length + " rates valid for " + date;
     }
 
@@ -42,14 +53,13 @@ public class RatesController {
             throw new RatesReadinessException(date);
         }
 
-        Rate[] rates = (Rate[]) ratesWrapper.get();
-        for (Rate r : rates) {
-            if (r.getAbbr().equals(abbr)) {
-                return "Rate of " + r.getScale() + " " + r.getAbbr() + " is " + r.getRate() + " BYN";
-            }
+        Map<String, Rate> ratesMap = (Map<String, Rate>) ratesWrapper.get();
+        Rate rate = ratesMap.get(abbr);
+        if (rate == null) {
+            throw new RateNotFoundException(date, abbr);
         }
 
-        throw new RateNotFoundException(date, abbr);
+        return "Rate of " + rate.getScale() + " " + rate.getAbbr() + " is " + rate.getRate() + " BYN";
     }
 
     @ExceptionHandler(RatesReadinessException.class)

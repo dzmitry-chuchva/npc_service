@@ -11,6 +11,9 @@ class Rate {
     private String id;
     @JsonProperty("Date")
     private LocalDate date;
+    /**
+     * Expecting abbr field to be unique.
+     */
     @JsonProperty("Cur_Abbreviation")
     private String abbr;
     @JsonProperty("Cur_Scale")
