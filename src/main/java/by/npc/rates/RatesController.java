@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClientResponseException;
@@ -32,7 +33,7 @@ public class RatesController {
     }
 
     @GetMapping("load")
-    public String loadRates(LocalDate date) {
+    public String loadRates(@RequestParam LocalDate date) {
         Rate[] rates = restTemplate.getForObject("https://www.nbrb.by/api/exrates/rates?periodicity=0&ondate={ondate}",
                 Rate[].class, date.toString());
 
@@ -47,7 +48,7 @@ public class RatesController {
     }
 
     @GetMapping
-    public String verifyRate(LocalDate date, String abbr) throws RatesReadinessException, RateNotFoundException {
+    public String verifyRate(@RequestParam LocalDate date, @RequestParam String abbr) throws RatesReadinessException, RateNotFoundException {
         Cache.ValueWrapper ratesWrapper = cacheManager.getCache("rates").get(date);
         if (ratesWrapper == null) {
             throw new RatesReadinessException(date);
