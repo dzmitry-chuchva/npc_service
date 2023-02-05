@@ -1,8 +1,6 @@
 package by.npc.rates;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,48 +12,34 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/")
 @Slf4j
 public class RatesController {
-    private final CacheManager cacheManager;
+    private final RatesStorage ratesStorage;
     private final ExternalRatesService externalRatesService;
 
-    public RatesController(CacheManager cacheManager, ExternalRatesService externalRatesService) {
-        this.cacheManager = cacheManager;
+    public RatesController(RatesStorage ratesStorage, ExternalRatesService externalRatesService) {
+        this.ratesStorage = ratesStorage;
         this.externalRatesService = externalRatesService;
     }
 
     @GetMapping("load")
     public String loadRates(@RequestParam LocalDate date) throws ExternalRatesServiceResponseException {
         List<ExternalRate> externalRates = externalRatesService.getRates(date);
-
-        // immediately process flat rates array into Rate::getAbbr keyed map to prepare faster lookup later
-        Map<String, Rate> ratesMap = externalRates.stream().map(r -> Rate.builder()
-                        .abbr(r.getAbbr())
-                        .rate(r.getRate())
-                        .scale(r.getScale())
-                        .build())
-                .collect(Collectors.toUnmodifiableMap(
-                        Rate::getAbbr,
-                        Function.identity()));
-
-        cacheManager.getCache("rates").put(date, ratesMap);
-
+        ratesStorage.storeRates(date, toInternalRates(externalRates));
         return "Loaded " + externalRates.size() + " rates valid for " + date;
     }
 
     @GetMapping("verify")
     public String verifyRate(@RequestParam LocalDate date, @RequestParam String abbr) throws RatesReadinessException, RateNotFoundException {
-        Rate rate = getRate(date, abbr);
+        Rate rate = ratesStorage.getRate(date, abbr);
         Rate previousDayRate;
         try {
-            previousDayRate = getRate(date.minusDays(1), abbr);
+            previousDayRate = ratesStorage.getRate(date.minusDays(1), abbr);
         } catch (RatesReadinessException | RateNotFoundException e) {
             previousDayRate = null;
         }
@@ -72,18 +56,13 @@ public class RatesController {
                 + ")";
     }
 
-    private Rate getRate(LocalDate date, String abbr) throws RatesReadinessException, RateNotFoundException {
-        Cache.ValueWrapper ratesWrapper = cacheManager.getCache("rates").get(date);
-        if (ratesWrapper == null) {
-            throw new RatesReadinessException(date);
-        }
-
-        Map<String, Rate> ratesMap = (Map<String, Rate>) ratesWrapper.get();
-        Rate rate = ratesMap.get(abbr);
-        if (rate == null) {
-            throw new RateNotFoundException(date, abbr);
-        }
-        return rate;
+    private static List<Rate> toInternalRates(List<ExternalRate> externalRates) {
+        return externalRates.stream().map(r -> Rate.builder()
+                        .abbr(r.getAbbr())
+                        .rate(r.getRate())
+                        .scale(r.getScale())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     @ExceptionHandler(RatesReadinessException.class)
