@@ -78,29 +78,41 @@ public class RatesService {
 
     @ExceptionHandler(RatesReadinessException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String ratesReadiness(RatesReadinessException e) {
+    public ErrorResponse ratesReadiness(RatesReadinessException e) {
         log.error("Rates not ready", e);
-        return "No rates loaded yet for " + e.getOnDate();
+        return ErrorResponse.builder()
+                .code(ErrorResponse.ErrorCode.ERR_RATES_NOT_READY)
+                .description("No rates loaded yet for " + e.getOnDate())
+                .build();
     }
 
     @ExceptionHandler(RateNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public String ratePresence(RateNotFoundException e) {
+    public ErrorResponse ratePresence(RateNotFoundException e) {
         log.info("Rate not found", e);
-        return "Rate for " + e.getAbbr() + " doesn't exist for " + e.getDate();
+        return ErrorResponse.builder()
+                .code(ErrorResponse.ErrorCode.ERR_NO_SUCH_RATE)
+                .description("Rate for " + e.getAbbr() + " doesn't exist for " + e.getDate())
+                .build();
     }
 
     @ExceptionHandler(ExternalRatesServiceResponseException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public String unexpectedRemoteAPIResponse(ExternalRatesServiceResponseException e) {
+    public ErrorResponse unexpectedRemoteAPIResponse(ExternalRatesServiceResponseException e) {
         log.error("Unexpected response of remote API received", e);
-        return "Remote API response was not what we expected. The status code was: [" + e.getMessage() + "]";
+        return ErrorResponse.builder()
+                .code(ErrorResponse.ErrorCode.ERR_PARTNER_COMMUNICATIONS)
+                .description("Problems occurred while communicating our partners")
+                .build();
     }
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public String unexpected(Exception e) {
+    public ErrorResponse unexpected(Exception e) {
         log.error("Unexpected error occurred", e);
-        return "Unexpected error has occurred. Associated message: [" + e.getMessage() + "]";
+        return ErrorResponse.builder()
+                .code(ErrorResponse.ErrorCode.ERR_GENERAL)
+                .description("Unexpected error has occurred")
+                .build();
     }
 }
