@@ -1,10 +1,10 @@
-package by.npc.rates;
+package by.npc.rates.store;
 
 import lombok.Getter;
 
 import java.time.LocalDate;
 
-class RatesReadinessException extends Exception {
+public class RatesReadinessException extends Exception {
     @Getter
     private final LocalDate onDate;
 

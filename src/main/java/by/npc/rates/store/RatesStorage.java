@@ -1,4 +1,4 @@
-package by.npc.rates;
+package by.npc.rates.store;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.Cache;
@@ -13,11 +13,11 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-class RatesStorage {
+public class RatesStorage {
     private static final String CACHE_NAME = "rates";
     private final CacheManager cacheManager;
 
-    void storeRates(LocalDate date, List<Rate> rates) {
+    public void storeRates(LocalDate date, List<Rate> rates) {
         // immediately process flat rates array into Rate::getAbbr keyed map to prepare faster lookup later
         Map<String, Rate> ratesMap = rates.stream()
                 .collect(Collectors.toUnmodifiableMap(
@@ -27,7 +27,7 @@ class RatesStorage {
         cacheManager.getCache(CACHE_NAME).put(date, ratesMap);
     }
 
-    Rate getRate(LocalDate date, String abbr) throws RatesReadinessException, RateNotFoundException {
+    public Rate getRate(LocalDate date, String abbr) throws RatesReadinessException, RateNotFoundException {
         Cache.ValueWrapper ratesWrapper = cacheManager.getCache(CACHE_NAME).get(date);
         if (ratesWrapper == null) {
             throw new RatesReadinessException(date);

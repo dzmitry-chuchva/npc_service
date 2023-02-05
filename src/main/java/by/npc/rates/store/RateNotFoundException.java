@@ -1,11 +1,11 @@
-package by.npc.rates;
+package by.npc.rates.store;
 
 import lombok.Getter;
 
 import java.time.LocalDate;
 
 @Getter
-class RateNotFoundException extends Exception {
+public class RateNotFoundException extends Exception {
     private final LocalDate date;
     private final String abbr;
 
