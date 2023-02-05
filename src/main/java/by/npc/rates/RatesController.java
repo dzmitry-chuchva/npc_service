@@ -1,5 +1,6 @@
 package by.npc.rates;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,14 +19,10 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/")
 @Slf4j
+@RequiredArgsConstructor
 public class RatesController {
     private final RatesStorage ratesStorage;
     private final ExternalRatesService externalRatesService;
-
-    public RatesController(RatesStorage ratesStorage, ExternalRatesService externalRatesService) {
-        this.ratesStorage = ratesStorage;
-        this.externalRatesService = externalRatesService;
-    }
 
     @GetMapping("load")
     public String loadRates(@RequestParam LocalDate date) throws ExternalRatesServiceResponseException {
