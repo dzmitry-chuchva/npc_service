@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/")
+@RequestMapping("/rates")
 @Slf4j
 @RequiredArgsConstructor
 public class RatesController {
