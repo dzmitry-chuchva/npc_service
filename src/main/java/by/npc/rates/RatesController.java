@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -48,6 +50,27 @@ public class RatesController {
 
     @GetMapping
     public String verifyRate(@RequestParam LocalDate date, @RequestParam String abbr) throws RatesReadinessException, RateNotFoundException {
+        Rate rate = getRate(date, abbr);
+        Rate previousDayRate;
+        try {
+            previousDayRate = getRate(date.minusDays(1), abbr);
+        } catch (RatesReadinessException | RateNotFoundException e) {
+            previousDayRate = null;
+        }
+
+        return "Rate of " + rate.getScale() + " " + rate.getAbbr() + " is " + rate.getRate() + " BYN (trending "
+                + Optional.ofNullable(previousDayRate)
+                .map(r -> switch (rate.getRate().divide(rate.getScale(), RoundingMode.HALF_UP)
+                        .compareTo(r.getRate().divide(r.getScale(), RoundingMode.HALF_UP))) {
+                    case 1 -> "up";
+                    case -1 -> "down";
+                    case 0 -> "same";
+                    default -> throw new IllegalStateException();
+                }).orElse("n/a")
+                + ")";
+    }
+
+    private Rate getRate(LocalDate date, String abbr) throws RatesReadinessException, RateNotFoundException {
         Cache.ValueWrapper ratesWrapper = cacheManager.getCache("rates").get(date);
         if (ratesWrapper == null) {
             throw new RatesReadinessException(date);
@@ -58,8 +81,7 @@ public class RatesController {
         if (rate == null) {
             throw new RateNotFoundException(date, abbr);
         }
-
-        return "Rate of " + rate.getScale() + " " + rate.getAbbr() + " is " + rate.getRate() + " BYN";
+        return rate;
     }
 
     @ExceptionHandler(RatesReadinessException.class)
