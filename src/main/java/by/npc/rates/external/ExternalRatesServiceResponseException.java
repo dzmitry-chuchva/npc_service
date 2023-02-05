@@ -1,6 +1,6 @@
-package by.npc.rates;
+package by.npc.rates.external;
 
-class ExternalRatesServiceResponseException extends Exception {
+public class ExternalRatesServiceResponseException extends Exception {
     ExternalRatesServiceResponseException(String message, Throwable cause) {
         super(message, cause);
     }

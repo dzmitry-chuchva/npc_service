@@ -1,5 +1,8 @@
 package by.npc.rates;
 
+import by.npc.rates.external.ExternalRate;
+import by.npc.rates.external.ExternalRatesService;
+import by.npc.rates.external.ExternalRatesServiceResponseException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

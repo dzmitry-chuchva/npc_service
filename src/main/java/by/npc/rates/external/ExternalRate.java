@@ -1,4 +1,4 @@
-package by.npc.rates;
+package by.npc.rates.external;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
-class ExternalRate {
+public class ExternalRate {
     @JsonProperty("Cur_ID")
     private String id;
     @JsonProperty("Date")
