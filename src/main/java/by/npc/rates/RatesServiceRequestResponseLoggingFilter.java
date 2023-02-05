@@ -9,12 +9,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
+import java.util.Optional;
 
 @Slf4j
 class RatesServiceRequestResponseLoggingFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        log.info("Rates request: " + request.getMethod() + " " + request.getRequestURL().append("?").append(request.getQueryString()));
+        log.info("Rates request: " + request.getMethod() + " " + request.getRequestURL()
+                .append("?").append(Optional.ofNullable(request.getQueryString()).orElse("")));
         ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
         try {
             filterChain.doFilter(request, responseWrapper);
