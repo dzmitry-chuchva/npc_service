@@ -14,7 +14,7 @@ import java.io.IOException;
 class RatesServiceRequestResponseLoggingFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        log.info("Rates request: " + request.getMethod() + " " + request.getRequestURL().append(request.getQueryString()));
+        log.info("Rates request: " + request.getMethod() + " " + request.getRequestURL().append("?").append(request.getQueryString()));
         ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
         try {
             filterChain.doFilter(request, responseWrapper);
