@@ -10,12 +10,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.RestTemplate;
 
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -25,27 +23,31 @@ import java.util.stream.Collectors;
 @RequestMapping("/")
 @Slf4j
 public class RatesController {
-    private final RestTemplate restTemplate;
     private final CacheManager cacheManager;
+    private final ExternalRatesService externalRatesService;
 
-    public RatesController(CacheManager cacheManager) {
+    public RatesController(CacheManager cacheManager, ExternalRatesService externalRatesService) {
         this.cacheManager = cacheManager;
-        this.restTemplate = new RestTemplate();
+        this.externalRatesService = externalRatesService;
     }
 
     @GetMapping("load")
-    public String loadRates(@RequestParam LocalDate date) {
-        Rate[] rates = restTemplate.getForObject("https://www.nbrb.by/api/exrates/rates?periodicity=0&ondate={ondate}",
-                Rate[].class, date.toString());
+    public String loadRates(@RequestParam LocalDate date) throws ExternalRatesServiceResponseException {
+        List<ExternalRate> externalRates = externalRatesService.getRates(date);
 
         // immediately process flat rates array into Rate::getAbbr keyed map to prepare faster lookup later
-        Map<String, Rate> ratesMap = Arrays.stream(rates).collect(Collectors.toUnmodifiableMap(
-                Rate::getAbbr,
-                Function.identity()));
+        Map<String, Rate> ratesMap = externalRates.stream().map(r -> Rate.builder()
+                        .abbr(r.getAbbr())
+                        .rate(r.getRate())
+                        .scale(r.getScale())
+                        .build())
+                .collect(Collectors.toUnmodifiableMap(
+                        Rate::getAbbr,
+                        Function.identity()));
 
         cacheManager.getCache("rates").put(date, ratesMap);
 
-        return "Loaded " + rates.length + " rates valid for " + date;
+        return "Loaded " + externalRates.size() + " rates valid for " + date;
     }
 
     @GetMapping("verify")
@@ -98,11 +100,11 @@ public class RatesController {
         return "Rate for " + e.getAbbr() + " doesn't exist for " + e.getDate();
     }
 
-    @ExceptionHandler(RestClientResponseException.class)
+    @ExceptionHandler(ExternalRatesServiceResponseException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public String unexpectedRemoteAPIResponse(RestClientResponseException e) {
-        log.error("Unexpected response of remote API received. API response status was: {}", e.getStatusText());
-        return "Remote API response was not what we expected. The status code was: [" + e.getStatusText() + "]";
+    public String unexpectedRemoteAPIResponse(ExternalRatesServiceResponseException e) {
+        log.error("Unexpected response of remote API received", e);
+        return "Remote API response was not what we expected. The status code was: [" + e.getMessage() + "]";
     }
 
     @ExceptionHandler(Exception.class)
