@@ -32,10 +32,14 @@ public class RatesService {
     private final ExternalRatesService externalRatesService;
 
     @GetMapping("load")
-    public String loadRates(@RequestParam LocalDate date) throws ExternalRatesServiceResponseException {
+    public LoadRatesResponse loadRates(@RequestParam LocalDate date) throws ExternalRatesServiceResponseException {
         List<ExternalRate> externalRates = externalRatesService.getRates(date);
         ratesStorage.storeRates(date, toInternalRates(externalRates));
-        return "Loaded " + externalRates.size() + " rates valid for " + date;
+        return LoadRatesResponse.builder()
+                .status("OK")
+                .count(externalRates.size())
+                .date(date)
+                .build();
     }
 
     @GetMapping("verify")
