@@ -48,7 +48,7 @@ public class RatesController {
         return "Loaded " + rates.length + " rates valid for " + date;
     }
 
-    @GetMapping
+    @GetMapping("verify")
     public String verifyRate(@RequestParam LocalDate date, @RequestParam String abbr) throws RatesReadinessException, RateNotFoundException {
         Rate rate = getRate(date, abbr);
         Rate previousDayRate;
