@@ -14,5 +14,7 @@ class ErrorResponse {
         ERR_RATES_NOT_READY,
         ERR_NO_SUCH_RATE,
         ERR_PARTNER_COMMUNICATIONS,
+        ERR_BAD_REQUEST_PARAMETER,
+        ERR_BAD_REQUEST,
     }
 }

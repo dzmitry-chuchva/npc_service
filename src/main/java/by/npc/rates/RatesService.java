@@ -9,7 +9,9 @@ import by.npc.rates.store.RatesReadinessException;
 import by.npc.rates.store.RatesStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -103,6 +105,26 @@ public class RatesService {
         return ErrorResponse.builder()
                 .code(ErrorResponse.ErrorCode.ERR_PARTNER_COMMUNICATIONS)
                 .description("Problems occurred while communicating our partners")
+                .build();
+    }
+
+    @ExceptionHandler(ServletRequestBindingException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse badRequest(ServletRequestBindingException e) {
+        log.info("Request binding failed", e);
+        return ErrorResponse.builder()
+                .code(ErrorResponse.ErrorCode.ERR_BAD_REQUEST)
+                .description("Required request data is missing")
+                .build();
+    }
+
+    @ExceptionHandler(TypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse badRequestParams(TypeMismatchException e) {
+        log.info("Passed request parameter type mismatch", e);
+        return ErrorResponse.builder()
+                .code(ErrorResponse.ErrorCode.ERR_BAD_REQUEST_PARAMETER)
+                .description("Invalid parameter value: " + e.getValue())
                 .build();
     }
 
