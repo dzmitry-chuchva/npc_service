@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/rates")
 @Slf4j
 @RequiredArgsConstructor
-public class RatesController {
+public class RatesService {
     private final RatesStorage ratesStorage;
     private final ExternalRatesService externalRatesService;
 
