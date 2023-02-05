@@ -43,7 +43,7 @@ public class RatesService {
     }
 
     @GetMapping("verify")
-    public String verifyRate(@RequestParam LocalDate date, @RequestParam String abbr) throws RatesReadinessException, RateNotFoundException {
+    public VerifyRateResponse verifyRate(@RequestParam LocalDate date, @RequestParam String abbr) throws RatesReadinessException, RateNotFoundException {
         Rate rate = ratesStorage.getRate(date, abbr);
         Rate previousDayRate;
         try {
@@ -52,16 +52,19 @@ public class RatesService {
             previousDayRate = null;
         }
 
-        return "Rate of " + rate.getScale() + " " + rate.getAbbr() + " is " + rate.getRate() + " BYN (trending "
-                + Optional.ofNullable(previousDayRate)
-                .map(r -> switch (rate.getRate().divide(rate.getScale(), RoundingMode.HALF_UP)
-                        .compareTo(r.getRate().divide(r.getScale(), RoundingMode.HALF_UP))) {
-                    case 1 -> "up";
-                    case -1 -> "down";
-                    case 0 -> "same";
-                    default -> throw new IllegalStateException();
-                }).orElse("n/a")
-                + ")";
+        return VerifyRateResponse.builder()
+                .abbr(rate.getAbbr())
+                .rate(rate.getRate())
+                .scale(rate.getScale())
+                .trend(Optional.ofNullable(previousDayRate)
+                        .map(prev -> switch (rate.getRate().divide(rate.getScale(), RoundingMode.HALF_UP)
+                                .compareTo(prev.getRate().divide(prev.getScale(), RoundingMode.HALF_UP))) {
+                            case 1 -> VerifyRateResponse.Trend.UP;
+                            case -1 -> VerifyRateResponse.Trend.DOWN;
+                            case 0 -> VerifyRateResponse.Trend.SAME;
+                            default -> throw new IllegalStateException();
+                        }).orElse(VerifyRateResponse.Trend.NOT_ENOUGH_INFO))
+                .build();
     }
 
     private static List<Rate> toInternalRates(List<ExternalRate> externalRates) {
